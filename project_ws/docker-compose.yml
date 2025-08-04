@@ -1,10 +1,11 @@
 services:
   backend:
     build:
-      context: ./backend
-      dockerfile: dockerfile.backend
+      context: .
+      dockerfile: ./backend/dockerfile.backend
     volumes:
       - ./backend:/backend
+      - ./.env:/backend/.env
     ports:
       - "8000:8000"
     depends_on:

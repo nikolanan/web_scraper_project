@@ -64,12 +64,13 @@ for card in course_cards:
         author = card.find_element(By.XPATH, './/div[@class="course-card-instructors_instructor-list__helor"]').text
         rating = card.find_element(By.XPATH, './/span[contains(@class, "ud-heading-sm star-rating_rating-number")]').text
         details = card.find_elements(By.XPATH, './/div[contains(@class, "course-meta-info")]')
-        regular_price = card.find_element(By.XPATH, './/div[contains(@class, "course-card_price-text-container")]').text
+        ##regular_price = card.find_element(By.XPATH, './/div[contains(@class, "course-card_price-text-container")]').text
+        current_price = card.find_element(By.XPATH, './/div[@data-purpose="course-price-text"]').text
 
         print("Course Title:", title)
         # print("Author:", author)
         print("Rating:", rating)
-        print("Regular Price:", regular_price)
+        print("Regular Price:", current_price)
         
         for detail in details:
             print("Detail:", detail.text)

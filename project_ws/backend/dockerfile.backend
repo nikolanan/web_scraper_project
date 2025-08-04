@@ -1,13 +1,27 @@
-FROM mcr.microsoft.com/playwright/python:v1.44.0-jammy
-
+# FROM mcr.microsoft.com/playwright/python:v1.44.0-jammy
+FROM python:3.11
 WORKDIR /backend
 
-COPY entrypoint.sh .
+RUN apt-get update && apt-get install -y \
+    wget curl unzip gnupg \
+    libnss3 libxss1 libasound2 libatk-bridge2.0-0 \
+    libgtk-3-0 fonts-liberation libgbm-dev \
+    libvulkan1 xdg-utils \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Chrome stable
+RUN wget -O chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
+    apt-get install -y ./chrome.deb && rm chrome.deb
+
+COPY ./backend/entrypoint.sh .
 RUN sed -i 's/\r$//g' entrypoint.sh
 RUN chmod +x entrypoint.sh
 
 # whole codebase better if errors
-COPY . .
+COPY ./backend .
+
+# Copy .env file from parent dir
+COPY ../.env .env
 
 RUN pip install --no-cache-dir -r requirements.txt
 
