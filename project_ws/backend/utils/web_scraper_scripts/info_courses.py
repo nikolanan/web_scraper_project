@@ -1,17 +1,30 @@
+import re
+import time
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.remote.webdriver import WebDriver
+from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from fastapi import HTTPException
 from .. import selenium_loader
-import re
-import time
 from .exceptions import *
 
 @selenium_loader.scrape_with_browser
-def last_page(driver):
+def last_page(driver: WebDriver) -> int:
+    """
+    Find the last page number in a paginated course list.
+
+    This function uses a Selenium WebDriver to locate all elements with a `data-page` attribute,
+    extracts their integer values, and returns the highest value found.
+
+    :param driver: Selenium WebDriver instance used for scraping.
+    :type driver: WebDriver
+    :return: The highest page number found (at least 1).
+    :rtype: int
+    """
+
     pagination_elements = driver.find_elements(By.XPATH, '//*[@data-page]')
 
-    # Extract the highest data-page value
     max_page = 1
     for el in pagination_elements:
         try:
@@ -24,7 +37,20 @@ def last_page(driver):
 
 
 @selenium_loader.scrape_with_browser
-def retrieve_courses_info(driver):
+def retrieve_courses_info(driver: WebDriver) -> list[dict]:
+    """
+    Scrape course information from a course listing page.
+
+    Waits for course cards to load, then extracts information from each card using
+    the `extract_course_data` function.
+
+    :param driver: Selenium WebDriver instance used for scraping.
+    :type driver: WebDriver
+    :raises HTTPException: If course cards do not load properly.
+    :return: A list of dictionaries, each containing information about a course.
+    :rtype: list[dict]
+    """
+
     try:
         WebDriverWait(driver, 20).until(
             EC.presence_of_all_elements_located((By.XPATH, '//*[contains(@class, "course-list_card__")]'))
@@ -52,7 +78,19 @@ def retrieve_courses_info(driver):
     print("Courses information retrieved successfully.")
     return list_courses
 
-def extract_course_data(card):
+def extract_course_data(card: WebElement) -> dict:
+    """
+    Extract detailed information from a single course card element.
+
+    Attempts to extract the course title, URL, authors, rating, number of students,
+    hours required, number of lectures, difficulty, current price, and original price.
+    Handles and logs extraction errors for each field.
+
+    :param card: Selenium WebElement representing a course card.
+    :type card: selenium.webdriver.remote.webelement.WebElement
+    :return: A dictionary with course information fields.
+    :rtype: dict
+    """
 
     title = None
     target_url = None
@@ -79,7 +117,7 @@ def extract_course_data(card):
 
         try:
             authors = card.find_element(By.XPATH, './/div[@class="course-card-instructors_instructor-list__helor"]').text
-            authors_list = authors.split("\n")
+            authors_list = authors.split(", ")
         except Exception as e:
             raise AuthorExtractionError(f"Failed to extract authors: {e}")
 
@@ -93,6 +131,7 @@ def extract_course_data(card):
             total_students = total_students[1:-1]
         except Exception as e:
             raise TotalStudentsExtractionError(f"Failed to extract number of students {e}")
+
         try:
             details = card.find_elements(By.XPATH, './/div[contains(@class, "course-meta-info")]')
             lines = details[0].text.split("\n")

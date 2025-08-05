@@ -11,5 +11,5 @@ class Authors_Courses(Base):
     __tablename__ = "authors_courses"
 
     id = Column(Integer,primary_key=True,index=True)
-    author_id = Column(Integer, ForeignKey("authors.id"))
-    course_id = Column(Integer,ForeignKey("courses.id"))
+    author_id = Column(Integer, ForeignKey("authors.id", ondelete='SET NULL'), nullable=True)
+    course_id = Column(Integer, ForeignKey("courses.id", ondelete='CASCADE'))

@@ -11,8 +11,8 @@ from models.authors import Authors, Authors_Courses
 from models.courses import Courses, Course_difficulties
 
 router = APIRouter(
-    prefix="/retrieve_data",
-    tags=["retrieve_data"]
+    prefix="/save_data",
+    tags=["save_data"]
 )
 
 def get_db():
@@ -32,7 +32,7 @@ def get_db():
     finally:
         db.close()
 
-db_dependancy = Annotated[Session,Depends(get_db)]
+db_dependancy = Annotated[Session, Depends(get_db)]
 
 @router.get("/load_coarses")
 async def load_coarses():
@@ -55,22 +55,27 @@ async def load_pages_by_pn(page_number: int):
         return {"error": str(e)}
 
 @router.post("/insert_courses/{page_number}")
-async def insert_courses(db:db_dependancy,page_number:int):
+async def insert_courses(db: db_dependancy,page_number: int):
     try:
         all_courses = retrive_mulitiple_courses(page_number)
         all_courses_validated = [CourseInput(**course) for course in all_courses]
 
+        courses_counter = 0
         for course in all_courses_validated:
             try:
-                difficulty = get_or_create_difficulty(db,course.difficulty)
-                authors = get_or_create_author(db,course.author)
+                courses_counter+=1
+                difficulty = get_or_create_difficulty(db, course.difficulty)
+                created_course = create_course(db, course, difficulty.id)
+                authors = get_or_create_author(db, course.author)
+                for author in authors:
+                    link_author_to_course(db, author.id, created_course.id)                
             except Exception as e:
                 return {"error":"transaction failed"}
-        
+        return {"Success":courses_counter}
     except Exception as e:
         return {"error": str(e)}
-    
-def get_or_create_difficulty(db:db_dependancy, difficulty_str:str) -> Course_difficulties:
+
+def get_or_create_difficulty(db: db_dependancy, difficulty_str: str) -> Course_difficulties:
     """
     If the difficulty is not in
     the database it creates it and
@@ -91,33 +96,79 @@ def get_or_create_difficulty(db:db_dependancy, difficulty_str:str) -> Course_dif
         db.commit()
         db.refresh(difficulty)
     return difficulty
-    
-def get_or_create_author(db:db_dependancy, author_names:list):
+
+def get_or_create_author(db: db_dependancy, author_names: list) -> list[Authors]:
+    """
+    Return a list of the author objects.
+    If an author doesnt exits in the database
+    it creates it
+
+    :param db: The db dependancy
+    :type db: db_dependancy
+    :param author_names: Authors extracted from the webscraping
+    :type author_names: list
+    :return: a list of authors object
+    :rtype: list[Authors]
+    """
     all_authors = []
     for author in author_names:
-        author = db.query(Authors).filter(Authors.name == author).first()
-        if not author:
-            author = Authors(name=author)
-            db.add(author)
+        cleaned = author.strip()
+        author_obj = db.query(Authors).filter(Authors.name == cleaned).first()
+        if not author_obj:
+            author_obj = Authors(name=cleaned)
+            db.add(author_obj)
             db.commit()
-            db.refresh(author)
-        all_authors.append(author)
+            db.refresh(author_obj)
+        all_authors.append(author_obj)
     return all_authors
 
-def link_author_to_course(db:db_dependancy,author_id:int,course_id:int):
+def link_author_to_course(db: db_dependancy, author_id: int, course_id: int):
+    """
+    Creates a link between author and course
+    if it doenst exist
+
+    :param db: The db dependancy
+    :type db: db_dependancy
+    :param author_id: The id of the author from the object
+    :type author_id: int
+    :param course_id: The id of the course fro the object
+    :type course_id: int
+    """
     link = db.query(Authors_Courses).filter(Authors_Courses.author_id == author_id, Authors_Courses.course_id == course_id).first()
     if not link:
+        link = Authors_Courses(author_id=author_id, course_id=course_id)
         db.add(link)
         db.commit()
 
-def create_course(db:db_dependancy, course_input:CourseInput,difficulty_id:int):
+def create_course(db: db_dependancy, course_input: CourseInput, difficulty_id: int) -> Courses:
+    """
+    Creates a course
+
+    :param db: The db depandancy
+    :type db: db_dependancy
+    :param course_input: The course object that has validated the data from the json
+    :type course_input: CourseInput
+    :param difficulty_id: The id of the difficulty (since it is a foreign key)
+    :type difficulty_id: int
+    :return: A model of type Courses
+    :rtype: Courses
+    """
+
+    def parse_price(price_str: str) -> float:
+        return float(price_str.replace("€", "").replace(",", "").strip())
+
+    def parse_students(students_str: str) -> int:
+        return int(students_str.replace(",", "").strip())
+
     course = Courses(
         name=course_input.title,
-        url=course_input.target_url,
-        duration=course_input.hours_required,
-        total_lectures=course_input.lectures_count,
-        rating=course_input.rating,
-        total_students=course_input.total_students,
+        url=str(course_input.target_url),
+        duration=float(course_input.hours_required),
+        total_lectures=int(course_input.lectures_count),
+        rating=float(course_input.rating),
+        total_students=parse_students(course_input.total_students),
+        current_price=parse_price(course_input.current_price),
+        original_price=parse_price(course_input.original_price),
         difficulty_id=difficulty_id
     )
 

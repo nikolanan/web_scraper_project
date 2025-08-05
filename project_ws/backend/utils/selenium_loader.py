@@ -1,13 +1,13 @@
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 import undetected_chromedriver as uc
+from typing import Callable, Any
+from selenium.webdriver.remote.webdriver import WebDriver
 
 
 def setup_driver():
     """
     Setup the Chrome driver with necessary options using undetected_chromedriver.
+    The setup is essential to simulate human-like behaviour in order to 
+    prevent anti-bot detection.
     """
 
     options = uc.ChromeOptions()
@@ -24,37 +24,27 @@ def setup_driver():
     driver = uc.Chrome(options=options, headless=True)
     return driver
 
-# def scrape_with_browser(url):
-#     """ 
-#     Decorator to scrape a webpage using Selenium.
+def scrape_with_browser(func: Callable[WebDriver, Any]) -> Callable[[str], Any]:
+    """
+    Decorator to wrap a scraping function with a Selenium WebDriver.
 
-#     :param url: URL to scrape
-#     :type url: str
+    This decorator handles the setup and teardown of a Selenium WebDriver
+    instance. It opens a browser, navigates to a specified URL, passes the
+    driver to the decorated function for scraping, and then gracefully
+    closes the browser regardless of whether an error occurred.
 
-#     """
+    :param func: The inner function that is wrapped inside the wraper
+    :type func: Callable[[WebDriver], Any]
+    :returns: A new function (the wrapper) that takes a URL as its only
+              argument and returns a type of any
+    :rtype: Callable[[str], Any]
+    """
 
-#     def decorator(func):
-#         def wrapper():
-#             driver = setup_driver()
-#             try:
-#                 driver.get(url)  ## gets the URL to open the page
-#                 result = func(driver) ## calls the function, for example, retrieve_courses_info
-#             except Exception as e:
-#                 print(f"Error loading URL {url}: {e}")
-#                 driver.quit()
-#                 raise
-#             else:
-#                 driver.quit()
-#                 return result
-#         return wrapper
-#     return decorator
-
-def scrape_with_browser(func):
-    def wrapper(url):
+    def wrapper(url: str) -> Any:
         driver = setup_driver()
         try:
-            driver.get(url)
-            result = func(driver)
+            driver.get(url) ## gets the URL to open the page
+            result = func(driver) ## calls the function, for example, retrieve_courses_info
         except Exception as e:
             print(f"Error loading URL {url}: {e}")
             driver.quit()
