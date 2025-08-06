@@ -3,16 +3,17 @@ from sqlalchemy.orm import Session
 from db.db_config import SessionLocal
 from utils.web_scraper_scripts.info_courses import retrieve_courses_info
 from utils.web_scraper_scripts.multiple_courses import retrive_mulitiple_courses
+from utils.web_scraper_scripts.pl_multiple_courses import retrive_mulitiple_courses_pl
 from typing import Annotated
 from starlette import status
 from typing import List
-from schemas.udemy_schema import CourseInput, CoursesInput
+from schemas.web_retrieval_schema import CourseInput, CoursesInput
 from models.authors import Authors, Authors_Courses
 from models.courses import Courses, Course_difficulties
 
 router = APIRouter(
     prefix="/save_data",
-    tags=["save_data"]
+    tags=["Scrape data"]
 )
 
 def get_db():
@@ -51,6 +52,13 @@ async def load_coarses():
 async def load_pages_by_pn(page_number: int):
     try:
         return retrive_mulitiple_courses(page_number)
+    except Exception as e:
+        return {"error": str(e)}
+    
+@router.get("/load_courses_page_number_pl/{page_number}")
+async def pl_load_pages_by_pn(page_number: int):
+    try:
+        return retrive_mulitiple_courses_pl(page_number)
     except Exception as e:
         return {"error": str(e)}
 

@@ -4,6 +4,13 @@ from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
 class Courses(Base):
+    """
+    A model (table) that represents a course
+    
+    :param Base: Base class for SQLAlchemy models.
+    :type Base: sqlalchemy.ext.declarative.DeclarativeMeta
+    """
+
     __tablename__ = "courses"
 
     id = Column(Integer,primary_key=True,index=True)
@@ -32,6 +39,16 @@ class Courses(Base):
     )
 
 class Course_difficulties(Base):
+    """
+    A model(table) that contains the different
+    types of difficulties for a given course. 
+    Used since few difficulty types are present
+    (helps with normalization).
+
+    :param Base: Base class for SQLAlchemy models.
+    :type Base: sqlalchemy.ext.declarative.DeclarativeMeta
+    """
+
     __tablename__ = "course_difficulties"
 
     id = Column(Integer,primary_key=True,index=True)

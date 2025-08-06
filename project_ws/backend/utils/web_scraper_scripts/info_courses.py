@@ -100,8 +100,8 @@ def extract_course_data(card: WebElement) -> dict:
     total_hours = None
     number_of_lectures = None
     difficulty = None
-    current_price = None
-    original_price = None
+    current_price = 0
+    original_price = 0
 
     try:
         try:
