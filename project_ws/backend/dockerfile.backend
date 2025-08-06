@@ -9,9 +9,10 @@ RUN apt-get update && apt-get install -y \
     libvulkan1 xdg-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Chrome stable
-RUN wget -O chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
-    apt-get install -y ./chrome.deb && rm chrome.deb
+# Install Chrome latest version
+RUN wget -q -O chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
+    && apt-get install -y ./chrome.deb \
+    && rm chrome.deb
 
 COPY ./backend/entrypoint.sh .
 RUN sed -i 's/\r$//g' entrypoint.sh

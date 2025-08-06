@@ -1,5 +1,5 @@
 from pydantic import BaseModel, HttpUrl
-from typing import List
+from typing import List, Optional
 
 class AuthorOut(BaseModel):
     """
@@ -48,11 +48,11 @@ class CourseOut(BaseModel):
     name: str
     url: str
     duration: float
-    total_lectures: int
+    total_lectures: Optional[int] = None
     rating: float
     total_students: int
-    current_price: float
-    original_price: float
+    current_price: Optional[float] = None
+    original_price: Optional[float] = None
     difficulty: DifficultyOut
     authors: List[AuthorOut]
 

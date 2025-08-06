@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlalchemy.orm import Session
 from db.db_config import SessionLocal
 from utils.web_scraper_scripts.info_courses import retrieve_courses_info
@@ -48,13 +48,18 @@ async def load_coarses():
     except Exception as e:
         return {"error": str(e)}
 
-@router.get("/load_courses_page_number/{page_number}")
-async def load_pages_by_pn(page_number: int):
+
+##test
+@router.get("/load_courses_page_number/{start_page}/{end_page}")
+async def load_pages_by_pn(web_platform:str = Query(description="Type udemy or pluralsight"), 
+                        start_page: int = Path(gt=0), 
+                        end_page: int = Path(gt=0)):
     try:
-        return retrive_mulitiple_courses(page_number)
+        return retrive_mulitiple_courses(web_platform,start_page,end_page)
     except Exception as e:
         return {"error": str(e)}
-    
+
+##test
 @router.get("/load_courses_page_number_pl/{page_number}")
 async def pl_load_pages_by_pn(page_number: int):
     try:
@@ -62,10 +67,39 @@ async def pl_load_pages_by_pn(page_number: int):
     except Exception as e:
         return {"error": str(e)}
 
-@router.post("/insert_courses/{page_number}")
-async def insert_courses(db: db_dependancy,page_number: int):
+@router.post("/insert_courses/{start_page}/{end_page}", status_code=status.HTTP_201_CREATED)
+async def insert_courses(db: db_dependancy, 
+                        web_platform:str = Query(description="Type udemy or pluralsight"), 
+                        start_page: int = Path(gt=0), 
+                        end_page: int = Path(gt=0)):
+    """
+    Inserts a batch of courses from an external web scraping source into the database.
+
+    This endpoint fetches a specific page of course data, validates it, and then
+    processes each course to ensure its associated difficulty and authors exist
+    or are created before inserting the new course.
+    
+    - **db**: The database dependency.
+    - **web_platform** either udemy or pluralsight
+
+    ### Returns
+
+    A JSON object indicating success and the number of courses successfully processed.
+    Example: `{"message": "Courses inserted successfully.", "inserted_count": 10}`
+
+    ### Raises
+
+    - **HTTPException(404, "Not Found")**: If the external scraping process returns no courses for the given `page_number`.
+    - **HTTPException(500, "Internal Server Error")**: If any error occurs during the processing of individual courses or a database operation.
+    """
     try:
-        all_courses = retrive_mulitiple_courses(page_number)
+        if start_page > end_page:
+            return {"Error":"starting page cannot be bigger tha ending page"}
+        all_courses = retrive_mulitiple_courses(web_platform, start_page, end_page)
+
+        if not all_courses:
+            raise HTTPException(status_code=404, detail="No courses retrieved from scraping")
+
         all_courses_validated = [CourseInput(**course) for course in all_courses]
 
         courses_counter = 0
@@ -76,12 +110,15 @@ async def insert_courses(db: db_dependancy,page_number: int):
                 created_course = create_course(db, course, difficulty.id)
                 authors = get_or_create_author(db, course.author)
                 for author in authors:
-                    link_author_to_course(db, author.id, created_course.id)                
-            except Exception as e:
-                return {"error":"transaction failed"}
+                    link_author_to_course(db, author.id, created_course.id)
+                db.commit()
+            except Exception:
+                db.rollback()
+                print(f"Error processing course in: {course.target_url}")
+                raise HTTPException(status_code=500, detail="Error while processing data")
         return {"Success":courses_counter}
-    except Exception as e:
-        return {"error": str(e)}
+    except HTTPException:
+        raise HTTPException(status_code=500, detail="Error on the incoming data")
 
 def get_or_create_difficulty(db: db_dependancy, difficulty_str: str) -> Course_difficulties:
     """
@@ -101,8 +138,9 @@ def get_or_create_difficulty(db: db_dependancy, difficulty_str: str) -> Course_d
     if not difficulty:
         difficulty = Course_difficulties(difficulty=difficulty_str)
         db.add(difficulty)
-        db.commit()
-        db.refresh(difficulty)
+        db.flush()
+        # db.commit()
+        # db.refresh(difficulty)
     return difficulty
 
 def get_or_create_author(db: db_dependancy, author_names: list) -> list[Authors]:
@@ -118,6 +156,7 @@ def get_or_create_author(db: db_dependancy, author_names: list) -> list[Authors]
     :return: a list of authors object
     :rtype: list[Authors]
     """
+
     all_authors = []
     for author in author_names:
         cleaned = author.strip()
@@ -125,8 +164,9 @@ def get_or_create_author(db: db_dependancy, author_names: list) -> list[Authors]
         if not author_obj:
             author_obj = Authors(name=cleaned)
             db.add(author_obj)
-            db.commit()
-            db.refresh(author_obj)
+            db.flush()
+            # db.commit()
+            # db.refresh(author_obj)
         all_authors.append(author_obj)
     return all_authors
 
@@ -142,11 +182,14 @@ def link_author_to_course(db: db_dependancy, author_id: int, course_id: int):
     :param course_id: The id of the course fro the object
     :type course_id: int
     """
+
     link = db.query(Authors_Courses).filter(Authors_Courses.author_id == author_id, Authors_Courses.course_id == course_id).first()
     if not link:
         link = Authors_Courses(author_id=author_id, course_id=course_id)
         db.add(link)
-        db.commit()
+        db.flush()
+        # db.commit()
+    return link
 
 def create_course(db: db_dependancy, course_input: CourseInput, difficulty_id: int) -> Courses:
     """
@@ -161,18 +204,27 @@ def create_course(db: db_dependancy, course_input: CourseInput, difficulty_id: i
     :return: A model of type Courses
     :rtype: Courses
     """
+    def safe_cast_int(value):
+        return int(value) if value is not None else None
+
+    def safe_cast_float(value):
+        return float(value) if value is not None else None
 
     def parse_price(price_str: str) -> float:
+        if price_str is None:
+            return None
         return float(price_str.replace("€", "").replace(",", "").strip())
 
-    def parse_students(students_str: str) -> int:
-        return int(students_str.replace(",", "").strip())
+    def parse_students(students: str | int) -> int:
+        if isinstance(students, int):
+            return students
+        return int(students.replace(",", "").strip())
 
     course = Courses(
         name=course_input.title,
         url=str(course_input.target_url),
         duration=float(course_input.hours_required),
-        total_lectures=int(course_input.lectures_count),
+        total_lectures=safe_cast_int(course_input.lectures_count),
         rating=float(course_input.rating),
         total_students=parse_students(course_input.total_students),
         current_price=parse_price(course_input.current_price),
@@ -181,7 +233,8 @@ def create_course(db: db_dependancy, course_input: CourseInput, difficulty_id: i
     )
 
     db.add(course)
-    db.commit()
-    db.refresh(course)
+    db.flush()
+    # db.commit()
+    # db.refresh(course)
 
     return course

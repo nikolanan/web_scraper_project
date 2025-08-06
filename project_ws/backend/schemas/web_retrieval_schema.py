@@ -1,5 +1,5 @@
 from pydantic import BaseModel, HttpUrl, Field
-from typing import List
+from typing import List, Optional
 
 
 class CourseInput(BaseModel):
@@ -15,10 +15,10 @@ class CourseInput(BaseModel):
     author: List[str]
     rating: str
     total_students:str
-    current_price: str
-    original_price: str
+    current_price: Optional[str] = None
+    original_price: Optional[str] = None
     hours_required: str
-    lectures_count: str
+    lectures_count: Optional[str] = None
     difficulty: str
 
 class CoursesInput(BaseModel):

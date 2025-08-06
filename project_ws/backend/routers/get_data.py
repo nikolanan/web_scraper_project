@@ -35,8 +35,8 @@ def get_db():
 ##The depandancy injection
 db_dependancy = Annotated[Session,Depends(get_db)]
 
-@router.get("/get_all_courses_from_db", 
-            response_model=List[CourseOut], 
+@router.get("/get_all_courses_from_db",
+            response_model=List[CourseOut],
             status_code=status.HTTP_200_OK)
 async def get_all_courses(db: db_dependancy):
     """
@@ -78,6 +78,9 @@ async def get_courses(
     
     - **id**: Filter by a specific course ID.
     - **keyword**: Search for a keyword in the course name (case-insensitive).
+    - **min_price**: 0.
+    - **max_price**: 1000.
+    - **rating**: Course rating from 0 to 5.
     - **difficulty**: Filter by the difficulty level (e.g., 'Beginner').
     - **author_name**: Filter by the name of an author.
 
