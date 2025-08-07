@@ -163,3 +163,22 @@ Use this url for the pg_admin:
 ```
 http://localhost:5050/browser/
 ```
+
+## Screenshots from the app
+
+### 1. Posting (Scraping and Adding Data)
+![Post Screenshot](screenshots/post1.png)
+![Post Screenshot](screenshots/post2.png)
+![Post Screenshot](screenshots/post3.png)
+![Post Screenshot](screenshots/post4.png)
+
+### 2. Retrieving Data (GET Request)
+![Get Screenshot](screenshots/get1.png)
+![Get Screenshot](screenshots/get2.png)
+![Get Screenshot](screenshots/get3.png)
+![Get Screenshot](screenshots/get4.png)
+![Get Screenshot](screenshots/get5.png)
+![Get Screenshot](screenshots/get6.png)
+
+### 3. Deleting Data (DELETE Request)
+![Delete Screenshot](screenshots/delete1.png)

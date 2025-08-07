@@ -10,9 +10,15 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Chrome latest version
-RUN apt-get update && wget -q -O chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
-    && apt-get install -y ./chrome.deb \
-    && rm chrome.deb
+# RUN apt-get update && wget -q -O chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
+#     && apt-get install -y ./chrome.deb \
+#     && rm chrome.deb
+
+RUN curl -fsSL https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg \
+    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list
+
+# Install Chrome using Google's repository (resolves all dependencies)
+RUN apt-get update && apt-get install -y google-chrome-stable
 
 COPY ./backend/entrypoint.sh .
 RUN sed -i 's/\r$//g' entrypoint.sh
