@@ -48,7 +48,7 @@ The aim of this project is to provide a robust, containerized web scraping and d
     Both implements scraping logic for Udemy and Pluralsight, including functions to extract course data, handle pagination, and log scraping events.
 
 - **multiple_pages_scraper.py**
-    Scrapes multiple pages for either Udemy or Pluralsight. Th main function takes 3
+    Scrapes multiple pages for either Udemy or Pluralsight. The main function takes 3
     arguments **staring page** , **ending page** and the **websites's name** (udemy or pluralsight)
 
 - **exceptions.py**
@@ -98,6 +98,32 @@ The aim of this project is to provide a robust, containerized web scraping and d
 
 ---
 
+## Database Structure
+
+The database is designed to efficiently store and relate course information, authors, and difficulty levels to maximaze
+the relational dabase positive aspects. It is designed to allow for minimal duplication of data.
+Below is an overview of the main tables and their relationships:
+
+### Tables and Relationships (models)
+
+#### 1. **Course**
+- **Fields:** `id`, `name`, `url`, `duration`, `total_lectures`, `rating`, `total_students`, `current_price`, `original_price`, `difficulty_id`
+- **Description:** Stores all core information about each course.
+
+#### 2. **Author**
+- **Fields:** `id`, `name`
+- **Description:** Stores information about course authors.
+
+#### 3. **Difficulty**
+- **Fields:** `id`, `difficulty`
+- **Description:** Stores difficulty levels (e.g., Beginner, Intermediate, Advanced).
+
+#### 4. **CourseAuthor** (association table)
+- **Fields:** `course_id`, `author_id`
+- **Description:** Implements the many-to-many relationship between courses and authors.
+
+---
+
 ## How It Works
 
 1. **Scraping**  
@@ -107,7 +133,7 @@ The aim of this project is to provide a robust, containerized web scraping and d
     Scraped data is validated using Pydantic schemas (`web_retrieval_schema.py`) before being processed or stored.
 
 3. **Database Storage**  
-    Validated data is stored in a PostgreSQL database. The data is checked again before insertion and if an error arires the trasaction will be rolled in order to prevent curropt data entering the database. SQLAlchemy models (not shown here) and Alembic are used for ORM and migrations.
+    Validated data is stored in a PostgreSQL database. The data is checked again before insertion and if an error arires the trasaction will be rolled in order to prevent currupt data entering the database. SQLAlchemy models (not shown here) and Alembic are used for ORM and migrations.
 
 4. **API**  
     FastAPI serves endpoints for retrieving and managing course data. (Each has its own
