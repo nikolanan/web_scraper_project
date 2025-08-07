@@ -186,8 +186,8 @@ RUN curl -fsSL https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor
 **The whole page didn't load**
 **Some elements of the page that are scraped did not load and therefore were not extracted**
 
-Since data is checked if something fails the whole db transaction is rolled back, so it doesn't affect the database
-the issue is **easily resolved if you scrape 1-3 times.** 
+Since data is checked if something fails the whole db transaction is rolled back, so it doesn't affect the database.
+The issue is **easily resolved if you scrape 1-3 times.** 
 
 
 ## Screenshots from the app

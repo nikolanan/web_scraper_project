@@ -3,6 +3,7 @@ services:
     build:
       context: .
       dockerfile: ./backend/dockerfile.backend
+    platform: linux/amd64
     volumes:
       - ./backend:/backend
       - ./.env:/backend/.env
