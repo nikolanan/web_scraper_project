@@ -148,12 +148,16 @@ def extract_course_data(card: WebElement) -> dict:
         try:
             current_price_text = card.find_element(By.XPATH, './/div[@data-purpose="course-price-text"]').text
             current_price = current_price_text.split("\n")[-1]
+            if current_price == "Free":
+                current_price = "0"
         except Exception as e:
             raise PriceExtractionError(f"Failed to extract current price: {e}")
 
         try:
             original_price_text = card.find_element(By.XPATH, './/div[@data-purpose="course-old-price-text"]').text
             original_price = original_price_text.split("\n")[-1]
+            if original_price == "Free":
+                original_price = "0"
         except Exception as e:
             original_price = current_price
             raise OriginalPriceExtractionError(f"Failed to extract original price: {e}")

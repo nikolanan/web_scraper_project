@@ -75,8 +75,12 @@ async def insert_courses(db: db_dependancy,
 
         logging.info(f"Retrieved coureses: {all_courses}")
 
+        attempts = 0
+        while not all_courses and attempts < 3:
+            attempts+=1
+            logging.warning(f"No courses retrieved for {web_platform}, pages {start_page} to {end_page}")
         if not all_courses:
-            raise HTTPException(status_code=404, detail="No courses retrieved from scraping")
+            raise HTTPException(status_code=404, detail="Error while processing data")
 
         all_courses_validated = [CourseInput(**course) for course in all_courses]
 
@@ -101,7 +105,7 @@ async def insert_courses(db: db_dependancy,
                 "Inserted_courses": all_courses_validated
         }
 
-    except HTTPException:
+    except Exception as exc:
         raise HTTPException(status_code=500, detail="Error on the incoming data")
 
 def get_or_create_difficulty(db: db_dependancy, difficulty_str: str) -> Course_difficulties:

@@ -154,6 +154,10 @@ docker-compose up --build
 
 to start all containers.
 
+Do not forget to apply migrations in docker:
+use ```alembic upgrade head``` !!! in the docker container
+to apply all migrations
+
 Use this url for the FastAPI interface:
 ```
 http://localhost:8000/docs
@@ -163,6 +167,24 @@ Use this url for the pg_admin:
 ```
 http://localhost:5050/browser/
 ```
+
+### Common errors you might encounter
+
+- if you are using **Mac** this line from the **dockerfile.backend** may fail (currently no solution - might be configuration issue):
+```
+RUN curl -fsSL https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg \
+    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list
+```
+- if using **Windows 10 or 11** change **CRLF** to **LF** if not. Ensures the entrypoint works as expected.
+
+- If you get **error while scraping** multiple pages this means that sometimes the page doesn`t load for two common reasons (common issue in headless mode):
+
+**The whole page didn't load**
+**Some elements of the page that are scraped did not load and therefore were not extracted**
+
+Since data is checked if something fails the whole db transaction is rolled back, so it doesn't affect the database
+the issue is **easily resolved if you scrape 1-3 times.** 
+
 
 ## Screenshots from the app
 

@@ -81,7 +81,7 @@ def retrieve_courses_info(driver: WebDriver) -> list[dict]:
     
     course_cards = driver.find_elements(By.XPATH, '//li[contains(@class,"browse-search-results-item")]')
     logging.info(f"Found {len(course_cards)} course cards.")
-    time.sleep(2)
+    time.sleep(5)
 
     list_courses = []
     for card in course_cards:

@@ -66,7 +66,7 @@ async def get_courses(
     db: db_dependancy,
     id: Optional[int] = Query(None, gt=0, description="Filter by course ID."),
     keyword: Optional[str] = Query(None, description="Search for a keyword in the course name (case-insensitive)."),
-    min_price: Optional[float] = Query(None, gt=0, description="Search for courses with a price greater than or equal to this value."),
+    min_price: Optional[float] = Query(None, gte=0, description="Search for courses with a price greater than or equal to this value."),
     max_price: Optional[float] = Query(None, le=1000, description="Search for courses with a price less than or equal to this value."),
     rating: Optional[float] = Query(None, gt=0, le=5, description="Search for a course rating above the given value."),
     difficulty: Optional[str] = Query(None, description="Filter by difficulty level."),
