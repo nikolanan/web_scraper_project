@@ -31,7 +31,7 @@ The aim of this project is to provide a robust, containerized web scraping and d
   Dockerfile for building the backend image. Installs system and Python dependencies, copies the backend code, and sets up the entrypoint.
 
 - **entrypoint.sh**  
-  Shell script used as the container entrypoint. Typically starts the FastAPI server and can be extended to run migrations or other setup tasks.
+  Shell script used as the container entrypoint. It starts the application using **exec uvicorn main:app --host 0.0.0.0 --port 8000 --reload**
 
 ---
 
