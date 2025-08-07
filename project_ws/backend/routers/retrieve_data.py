@@ -1,15 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlalchemy.orm import Session
 from db.db_config import SessionLocal
-from utils.web_scraper_scripts.info_courses import retrieve_courses_info
-from utils.web_scraper_scripts.multiple_courses import retrive_mulitiple_courses
-from utils.web_scraper_scripts.pl_multiple_courses import retrive_mulitiple_courses_pl
+from utils.web_scraper_scripts.multiple_pages_scraper import retrive_mulitiple_courses
 from typing import Annotated
 from starlette import status
 from typing import List
 from schemas.web_retrieval_schema import CourseInput, CoursesInput
 from models.authors import Authors, Authors_Courses
 from models.courses import Courses, Course_difficulties
+from utils.logger import logger_setup
+import logging
 
 router = APIRouter(
     prefix="/save_data",
@@ -35,42 +35,10 @@ def get_db():
 
 db_dependancy = Annotated[Session, Depends(get_db)]
 
-@router.get("/load_coarses")
-async def load_coarses():
-    """
-    Endpoint to retrieve course information.
-    Calls the `retrieve_courses_info` function to scrape data from Udemy.
-    """
-    try:
-        URL = "https://www.udemy.com/courses/it-and-software/other-it-and-software/?p=1&sort=most-reviewed"
-        courses_info = retrieve_courses_info(URL)
-        return {"courses": courses_info}
-    except Exception as e:
-        return {"error": str(e)}
-
-
-##test
-@router.get("/load_courses_page_number/{start_page}/{end_page}")
-async def load_pages_by_pn(web_platform:str = Query(description="Type udemy or pluralsight"), 
-                        start_page: int = Path(gt=0), 
-                        end_page: int = Path(gt=0)):
-    try:
-        return retrive_mulitiple_courses(web_platform,start_page,end_page)
-    except Exception as e:
-        return {"error": str(e)}
-
-##test
-@router.get("/load_courses_page_number_pl/{page_number}")
-async def pl_load_pages_by_pn(page_number: int):
-    try:
-        return retrive_mulitiple_courses_pl(page_number)
-    except Exception as e:
-        return {"error": str(e)}
-
 @router.post("/insert_courses/{start_page}/{end_page}", status_code=status.HTTP_201_CREATED)
 async def insert_courses(db: db_dependancy, 
-                        web_platform:str = Query(description="Type udemy or pluralsight"), 
-                        start_page: int = Path(gt=0), 
+                        web_platform:str = Query(description="Type udemy or pluralsight"),
+                        start_page: int = Path(gt=0),
                         end_page: int = Path(gt=0)):
     """
     Inserts a batch of courses from an external web scraping source into the database.
@@ -78,18 +46,26 @@ async def insert_courses(db: db_dependancy,
     This endpoint fetches a specific page of course data, validates it, and then
     processes each course to ensure its associated difficulty and authors exist
     or are created before inserting the new course.
+
+    ### Udemy's url scraped from:
+    **https://www.udemy.com/courses/it-and-software/other-it-and-software/?p=1&sort=most-reviewed**
+    
+    ### Pluralsight's url scraped from:
+    **https://www.pluralsight.com/browse?=&sort=newest&course-category=Software%20Development&page={1}&ratings=3.0%20and%20up&categories=course**
     
     - **db**: The database dependency.
     - **web_platform** either udemy or pluralsight
+    - **start_page**: that starts the webscraping starts from
+    - **end_page**: that is the last page the is webscraped (including)
 
     ### Returns
 
-    A JSON object indicating success and the number of courses successfully processed.
-    Example: `{"message": "Courses inserted successfully.", "inserted_count": 10}`
+    A JSON object indicating success and the number of courses successfully processed as well as
+    the inserted courses
 
     ### Raises
 
-    - **HTTPException(404, "Not Found")**: If the external scraping process returns no courses for the given `page_number`.
+    - **HTTPException(404, "Not Found")**: If the external scraping process returns no courses for the given pages or platform.
     - **HTTPException(500, "Internal Server Error")**: If any error occurs during the processing of individual courses or a database operation.
     """
     try:
@@ -114,9 +90,15 @@ async def insert_courses(db: db_dependancy,
                 db.commit()
             except Exception:
                 db.rollback()
-                print(f"Error processing course in: {course.target_url}")
+                logging.info("Transaction cancelled")
+                logging.error(f"Error processing course in: {course.target_url}")
                 raise HTTPException(status_code=500, detail="Error while processing data")
-        return {"Success":courses_counter}
+
+        return {
+                "Success":courses_counter,
+                "Inserted_courses": all_courses_validated
+        }
+
     except HTTPException:
         raise HTTPException(status_code=500, detail="Error on the incoming data")
 
@@ -139,8 +121,7 @@ def get_or_create_difficulty(db: db_dependancy, difficulty_str: str) -> Course_d
         difficulty = Course_difficulties(difficulty=difficulty_str)
         db.add(difficulty)
         db.flush()
-        # db.commit()
-        # db.refresh(difficulty)
+
     return difficulty
 
 def get_or_create_author(db: db_dependancy, author_names: list) -> list[Authors]:
@@ -165,8 +146,7 @@ def get_or_create_author(db: db_dependancy, author_names: list) -> list[Authors]
             author_obj = Authors(name=cleaned)
             db.add(author_obj)
             db.flush()
-            # db.commit()
-            # db.refresh(author_obj)
+
         all_authors.append(author_obj)
     return all_authors
 
@@ -188,7 +168,7 @@ def link_author_to_course(db: db_dependancy, author_id: int, course_id: int):
         link = Authors_Courses(author_id=author_id, course_id=course_id)
         db.add(link)
         db.flush()
-        # db.commit()
+
     return link
 
 def create_course(db: db_dependancy, course_input: CourseInput, difficulty_id: int) -> Courses:
@@ -234,7 +214,5 @@ def create_course(db: db_dependancy, course_input: CourseInput, difficulty_id: i
 
     db.add(course)
     db.flush()
-    # db.commit()
-    # db.refresh(course)
 
     return course

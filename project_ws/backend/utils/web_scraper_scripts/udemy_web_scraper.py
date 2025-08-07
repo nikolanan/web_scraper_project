@@ -1,5 +1,7 @@
 import re
 import time
+from ..logger import logger_setup
+import logging
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
@@ -44,6 +46,8 @@ def retrieve_courses_info(driver: WebDriver) -> list[dict]:
     Waits for course cards to load, then extracts information from each card using
     the `extract_course_data` function.
 
+    Logging is used to track the procces
+
     :param driver: Selenium WebDriver instance used for scraping.
     :type driver: WebDriver
     :raises HTTPException: If course cards do not load properly.
@@ -57,15 +61,15 @@ def retrieve_courses_info(driver: WebDriver) -> list[dict]:
 
         )
     except Exception as e:
-        print("Courses did not load properly:", e)
+        logging.error(f"Courses did not load properly: {e}")
         driver.quit()
         raise HTTPException(status_code=500, detail="Courses did not load properly")
 
-    print("Course cards loaded successfully.")
+    logging.info("Course cards loaded successfully.")
 
     # Get course cards using XPath
     course_cards = driver.find_elements(By.XPATH, '//*[contains(@class, "course-list_card__")]')
-    print(f"Found {len(course_cards)} course cards.")
+    logging.info(f"Found {len(course_cards)} course cards.")
     ##Delay to load
     time.sleep(2)
 
@@ -75,7 +79,7 @@ def retrieve_courses_info(driver: WebDriver) -> list[dict]:
         course_info = extract_course_data(card)
         list_courses.append(course_info)
 
-    print("Courses information retrieved successfully.")
+    logging.info("Courses information retrieved successfully.")
     return list_courses
 
 def extract_course_data(card: WebElement) -> dict:
@@ -155,10 +159,10 @@ def extract_course_data(card: WebElement) -> dict:
             raise OriginalPriceExtractionError(f"Failed to extract original price: {e}")
 
     except CourseExtractionError as e:
-        print(str(e))
+        logging.error(f"{str(e)}")
         
     finally:
-        return {
+        card_batch = {
             "title": title,
             "target_url": target_url,
             "author": authors_list,
@@ -170,3 +174,6 @@ def extract_course_data(card: WebElement) -> dict:
             "lectures_count": number_of_lectures,
             "difficulty": difficulty
         }
+        logging.info(card_batch)
+
+        return card_batch

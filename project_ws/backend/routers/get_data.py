@@ -139,8 +139,8 @@ async def get_courses(
     return courses
 
 @router.get("/get_all_difficulty_types",
-             response_model=List[DifficultyOut],
-             status_code=status.HTTP_200_OK)
+            response_model=List[DifficultyOut],
+            status_code=status.HTTP_200_OK)
 async def get_all_difficulty_types(db: db_dependancy):
     """
     Returns a course with the given id.

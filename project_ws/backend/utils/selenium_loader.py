@@ -1,6 +1,8 @@
 import undetected_chromedriver as uc
 from typing import Callable, Any
 from selenium.webdriver.remote.webdriver import WebDriver
+from .logger import logger_setup
+import logging
 
 
 def setup_driver():
@@ -46,7 +48,7 @@ def scrape_with_browser(func: Callable[WebDriver, Any]) -> Callable[[str], Any]:
             driver.get(url) ## gets the URL to open the page
             result = func(driver) ## calls the function, for example, retrieve_courses_info
         except Exception as e:
-            print(f"Error loading URL {url}: {e}")
+            logging.info(f"Error loading URL {url}: {e}")
             driver.quit()
             raise
         else:

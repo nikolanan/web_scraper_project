@@ -5,6 +5,7 @@ venv/
 backend/db/__pycache__/
 backend/utils/__pycache__/
 backend/utils/web_scraper_scripts/__pycache__/
+backend/utils/logger/__pycache__/
 backend/routers/__pycache__/
 backend/schemas/__pycache__/
 backend/models/__pycache__

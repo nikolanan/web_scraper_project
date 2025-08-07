@@ -1,5 +1,7 @@
 import re
 import time
+from ..logger import logger_setup
+import logging
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
@@ -16,7 +18,7 @@ def last_page(driver: WebDriver) -> int:
     """
     Find the last page number in a paginated course list.
 
-    This function uses a Selenium WebDriver to locate all elements with a `data-page` attribute,
+    This function uses a Selenium WebDriver to locate all elements with a `change--position1` class,
     extracts their integer values, and returns the highest value found.
 
     :param driver: Selenium WebDriver instance used for scraping.
@@ -41,7 +43,22 @@ def last_page(driver: WebDriver) -> int:
 @selenium_loader.scrape_with_browser
 def retrieve_courses_info(driver: WebDriver) -> list[dict]:
     """
-    Scrape Pluralsight labs/course information from a search results page.
+    Scrape Pluralsight course information from a search results page.
+
+    This function uses a Selenium WebDriver to:
+    - Simulate pressing the Enter key to trigger search results loading
+    - Wait for all course cards to appear on the page
+    - Extract relevant information from each course card using `extract_course_data`
+    
+    Return a list of dictionaries, each representing a course
+
+    Logging is used to record the scraping process and any errors encountered.
+
+    :param driver: Selenium WebDriver instance used for scraping.
+    :type driver: WebDriver
+    :raises HTTPException: If course cards do not load properly.
+    :return: A list of dictionaries, each containing information about a course.
+    :rtype: list[dict]
     """
 
     actions = ActionChains(driver)
@@ -57,20 +74,20 @@ def retrieve_courses_info(driver: WebDriver) -> list[dict]:
             EC.presence_of_all_elements_located((By.XPATH, '//li[contains(@class,"browse-search-results-item")]'))
         )
     except Exception as e:
-        print("Courses did not load properly:", e)
+        logging.error(f"Courses did not load properly: {e}")
         driver.quit()
         raise HTTPException(status_code=500, detail="Courses did not load properly")
-    print("Course cards loaded successfully.")
+    logging.info("Course cards loaded successfully.")
     
     course_cards = driver.find_elements(By.XPATH, '//li[contains(@class,"browse-search-results-item")]')
-    print(f"Found {len(course_cards)} course cards.")
+    logging.info(f"Found {len(course_cards)} course cards.")
     time.sleep(2)
 
     list_courses = []
     for card in course_cards:
         list_courses.append(extract_course_data(card))
 
-    print("Courses information retrieved successfully.")
+    logging.info("Courses information retrieved successfully.")
     return list_courses
 
 def extract_course_data(card: WebElement) -> dict:
@@ -149,10 +166,10 @@ def extract_course_data(card: WebElement) -> dict:
             raise TotalStudentsExtractionError("Failed to extract total students")
 
     except CourseExtractionError as e:
-        print(str(e))
+        logging.error(f"{str(e)}")
 
     finally:
-        return {
+        card_batch = {
             "title": title,
             "target_url": target_url,
             "author": authors_list,
@@ -164,4 +181,6 @@ def extract_course_data(card: WebElement) -> dict:
             "lectures_count": number_of_lectures,
             "difficulty": difficulty,
         }
+        logging.info(card_batch)
 
+        return card_batch
