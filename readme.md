@@ -155,7 +155,11 @@ docker-compose up --build
 to start all containers.
 
 Do not forget to apply migrations in docker:
-use ```alembic upgrade head``` !!! in the docker container
+use 
+```
+alembic upgrade head
+``` 
+!!! in the docker container
 to apply all migrations
 
 Use this url for the FastAPI interface:
