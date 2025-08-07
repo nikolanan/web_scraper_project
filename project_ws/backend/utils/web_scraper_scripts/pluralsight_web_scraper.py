@@ -61,14 +61,14 @@ def retrieve_courses_info(driver: WebDriver) -> list[dict]:
     :rtype: list[dict]
     """
 
-    actions = ActionChains(driver)
+    # actions = ActionChains(driver)
 
-    # Press the Enter key
-    actions.send_keys(Keys.ENTER)
+    # # Press the Enter key
+    # actions.send_keys(Keys.ENTER)
 
-    # Perform the action
-    actions.perform()
-    time.sleep(3)
+    # # Perform the action
+    # actions.perform()
+    # time.sleep(3)
     try:
         WebDriverWait(driver, 40).until(
             EC.presence_of_all_elements_located((By.XPATH, '//li[contains(@class,"browse-search-results-item")]'))

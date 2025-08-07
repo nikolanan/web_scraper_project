@@ -26,7 +26,8 @@ def retrive_mulitiple_courses(web_platform:str, start_page: int=1, end_page:int=
     """
 
     all_courses = []
-    
+    logging.info(f"function retrive_mulitiple_courses invoked.")
+
     platform_map = {
         WebPlatform.udemy: {
             "base_url": BASE_URL_UDEMY,
@@ -50,6 +51,7 @@ def retrive_mulitiple_courses(web_platform:str, start_page: int=1, end_page:int=
         end_page = last_page
 
     for page in range(start_page, end_page + 1):
+        logging.info(f"Scraping page {page} of {web_platform}")
         url = config["base_url"].format(page)
         page_of_courses = config["scraper"](url)
         all_courses.extend(page_of_courses)

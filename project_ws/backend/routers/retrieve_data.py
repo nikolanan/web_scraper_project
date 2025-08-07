@@ -73,6 +73,8 @@ async def insert_courses(db: db_dependancy,
             return {"Error":"starting page cannot be bigger tha ending page"}
         all_courses = retrive_mulitiple_courses(web_platform, start_page, end_page)
 
+        logging.info(f"Retrieved coureses: {all_courses}")
+
         if not all_courses:
             raise HTTPException(status_code=404, detail="No courses retrieved from scraping")
 
